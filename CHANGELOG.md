@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- README: voice announcements on Alexa, Google Nest and HomePod when a parcel is out for delivery.
+
 ## 0.2.0
 
 First public release.

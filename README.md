@@ -182,11 +182,18 @@ The integration is declared as `cloud_polling` because polling is always on and 
 
 ## Examples
 
-### Announce "out for delivery" on a speaker
+### Announcements on Alexa, Google Nest and HomePod
+
+BoxBlip does not talk to speakers itself: these automations use integrations you may already have in Home Assistant.
+Replace the entity ids with yours.
+
+**Google Nest, Chromecast, HomePod and other speakers** that Home Assistant shows as a `media_player` (Google Cast,
+Apple TV for HomePod, Sonos and so on), with any text-to-speech entity (`tts.home_assistant_cloud`,
+`tts.google_translate_en_com`, …):
 
 ```yaml
 automation:
-  - alias: "Parcel out for delivery"
+  - alias: "Parcel out for delivery: announce"
     triggers:
       - trigger: event
         event_type: boxblip_parcel_updated
@@ -205,6 +212,31 @@ automation:
             {{ trigger.event.data.display_name }} is out for delivery
             with {{ trigger.event.data.carrier or 'the courier' }}.
 ```
+
+**Amazon Echo (Alexa)** with the community integration Alexa Media Player (installed from HACS):
+
+```yaml
+automation:
+  - alias: "Parcel out for delivery: Alexa"
+    triggers:
+      - trigger: event
+        event_type: boxblip_parcel_updated
+        event_data:
+          new_status: out_for_delivery
+    conditions:
+      - condition: template
+        value_template: "{{ not trigger.event.data.outgoing }}"
+    actions:
+      - action: notify.alexa_media
+        data:
+          target: media_player.kitchen_echo
+          message: "{{ trigger.event.data.display_name }} is out for delivery."
+          data:
+            type: announce
+```
+
+Echo devices announce only with *Communications* enabled for them in the Alexa app, and stay silent in Do Not
+Disturb.
 
 ### Notify when a parcel is ready at the pickup point
 
@@ -395,6 +427,19 @@ Per aggiungerla: **Impostazioni › Plance › Aggiungi plancia › Nuova planci
   `tracking_number`, `last_event`, `eta`, `tracking_url` e gli altri campi descritti sopra. Non viene generato per la
   situazione trovata all'avvio; un pacco comparso dopo l'avvio genera un evento con `old_status: null`.
 - `boxblip.refresh`: legge subito i pacchi senza aspettare il prossimo controllo.
+
+### Annunci su Alexa, Google Nest e HomePod
+
+Con le integrazioni che hai già in Home Assistant puoi far annunciare i pacchi in consegna (esempi completi nella
+sezione inglese *Announcements on Alexa, Google Nest and HomePod*):
+
+- **Google Nest, Chromecast, HomePod** e altri altoparlanti visti come `media_player` (Google Cast, Apple TV per
+  HomePod, Sonos…): azione `tts.speak` con un'entità di sintesi vocale e `media_player_entity_id`.
+- **Amazon Echo** con l'integrazione della comunità Alexa Media Player: azione `notify.alexa_media` con
+  `target: media_player.<tuo_echo>` e `data: {type: announce}`. Serve *Comunicazioni* attivo per l'Echo nell'app
+  Alexa.
+
+L'attivatore è l'evento `boxblip_parcel_updated` con `new_status: out_for_delivery`.
 
 ### Aggiornamenti immediati (facoltativi)
 
