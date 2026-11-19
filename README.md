@@ -19,18 +19,22 @@ Step-by-step guide on the BoxBlip website: <https://boxblip.daniele-messi.com/ho
 
 ### HACS (recommended)
 
-BoxBlip is installed in HACS as a custom repository:
+BoxBlip is in the HACS default store:
 
-1. In Home Assistant open **HACS**, then the three dots in the top right corner › **Custom repositories**.
-2. Paste `https://github.com/danymexi/boxblip-home-assistant`, choose the type **Integration** and tap **Add**.
-3. Search HACS for **BoxBlip**, open it and tap **Download**.
-4. Restart Home Assistant: **Settings › System**, then the power button in the top right corner › **Restart Home
+1. In Home Assistant open **HACS** and search for **BoxBlip**.
+2. Open it and tap **Download**.
+3. Restart Home Assistant: **Settings › System**, then the power button in the top right corner › **Restart Home
    Assistant**.
 
 HACS tells you when a new version is out; update from the same page and restart.
 
 Already installed by hand? Follow the same steps: HACS replaces the folder and from then on manages updates. The
 integration, its settings and your entities stay as they are.
+
+BoxBlip does not show up in the search? Your HACS may not have refreshed its list yet. Add it as a custom repository:
+the three dots in the top right corner of HACS › **Custom repositories**, paste
+`https://github.com/danymexi/boxblip-home-assistant`, choose the type **Integration** and tap **Add**. Then search
+for **BoxBlip** and continue from step 2.
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=danymexi&repository=boxblip-home-assistant&category=integration)
 
@@ -364,17 +368,20 @@ Guida passo passo sul sito: <https://boxblip.daniele-messi.com/it/home-assistant
 
 ### Installazione
 
-**Con HACS (consigliato)**, come repository personalizzato:
+**Con HACS (consigliato)**: BoxBlip è nell'archivio predefinito di HACS.
 
-1. In Home Assistant apri **HACS**, poi i tre puntini in alto a destra › **Repository personalizzati**.
-2. Incolla `https://github.com/danymexi/boxblip-home-assistant`, scegli il tipo **Integrazione** e tocca
-   **Aggiungi**.
-3. Cerca **BoxBlip** in HACS, aprilo e tocca **Scarica**.
-4. Riavvia Home Assistant: **Impostazioni › Sistema**, poi il pulsante di accensione in alto a destra › **Riavvia
+1. In Home Assistant apri **HACS** e cerca **BoxBlip**.
+2. Aprilo e tocca **Scarica**.
+3. Riavvia Home Assistant: **Impostazioni › Sistema**, poi il pulsante di accensione in alto a destra › **Riavvia
    Home Assistant**.
 
 HACS ti avvisa quando esce una nuova versione: aggiornala dalla stessa pagina e riavvia. Se l'avevi già installata a
 mano, segui gli stessi passi: HACS sostituisce la cartella e l'integrazione, le impostazioni e le entità restano.
+
+BoxBlip non compare nella ricerca? Il tuo HACS potrebbe non aver ancora aggiornato l'elenco. Aggiungilo come
+repository personalizzato: i tre puntini in alto a destra in HACS › **Repository personalizzati**, incolla
+`https://github.com/danymexi/boxblip-home-assistant`, scegli il tipo **Integrazione** e tocca **Aggiungi**. Poi cerca
+**BoxBlip** e prosegui dal punto 2.
 
 **A mano**: scarica il sorgente dell'[ultima versione](https://github.com/danymexi/boxblip-home-assistant/releases/latest),
 copia la cartella `custom_components/boxblip` in `<config>/custom_components/` e riavvia Home Assistant.
