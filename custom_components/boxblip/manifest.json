@@ -2,6 +2,7 @@
   "domain": "boxblip",
   "name": "BoxBlip",
   "after_dependencies": ["cloud"],
+  "categories": ["productivity_information"],
   "codeowners": ["@danymexi"],
   "config_flow": true,
   "dependencies": ["webhook"],
