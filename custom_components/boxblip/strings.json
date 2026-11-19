@@ -1,0 +1,242 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This BoxBlip code is already set up.",
+      "reauth_successful": "The new code works. BoxBlip is connected again.",
+      "reconfigure_successful": "BoxBlip has been updated."
+    },
+    "error": {
+      "cannot_connect": "Could not reach the BoxBlip server. Check the address and your internet connection.",
+      "invalid_auth": "The code was not accepted. It may have been revoked: create a new one in the app.",
+      "invalid_token_format": "This does not look like a BoxBlip code. It starts with bbha_.",
+      "invalid_url": "Enter an https address (plain http only works for a server on this machine).",
+      "server_disabled": "Home Assistant access is switched off on the server right now. Try again later.",
+      "unknown": "Unexpected error."
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "token": "Code"
+        },
+        "data_description": {
+          "token": "In the BoxBlip app open Import, then Home Assistant, and tap Generate a new code."
+        },
+        "description": "BoxBlip no longer accepts the saved code. Paste a new one from the app.",
+        "title": "Reconnect BoxBlip"
+      },
+      "reconfigure": {
+        "data": {
+          "token": "Code",
+          "url": "Server address"
+        },
+        "data_description": {
+          "token": "The code from the BoxBlip app (Import, then Home Assistant).",
+          "url": "Leave the default unless you run your own BoxBlip server."
+        },
+        "title": "Update BoxBlip"
+      },
+      "user": {
+        "data": {
+          "token": "Code",
+          "url": "Server address"
+        },
+        "data_description": {
+          "token": "In the BoxBlip app open Import, then Home Assistant, tap Connect Home Assistant and copy the code. It is shown only once.",
+          "url": "Leave the default unless you run your own BoxBlip server."
+        },
+        "description": "Show your parcels from BoxBlip in Home Assistant. The code only lets Home Assistant read your parcels.",
+        "title": "Connect BoxBlip"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "delivery_today": {
+        "name": "Delivery today"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Deliveries"
+      }
+    },
+    "sensor": {
+      "carrier": {
+        "name": "Carrier"
+      },
+      "delivered_today": {
+        "name": "Delivered today",
+        "unit_of_measurement": "parcels"
+      },
+      "expected_delivery": {
+        "name": "Expected by",
+        "state_attributes": {
+          "has_time": {
+            "name": "Time window"
+          },
+          "window_end": {
+            "name": "Window end"
+          },
+          "window_start": {
+            "name": "Window start"
+          }
+        }
+      },
+      "last_event": {
+        "name": "Last event"
+      },
+      "last_read": {
+        "name": "Last read"
+      },
+      "last_update": {
+        "name": "Last update"
+      },
+      "location": {
+        "name": "Last place"
+      },
+      "next_delivery": {
+        "name": "Next delivery",
+        "state_attributes": {
+          "parcels": {
+            "name": "Parcels"
+          }
+        }
+      },
+      "on_the_way": {
+        "name": "On the way",
+        "unit_of_measurement": "parcels"
+      },
+      "out_for_delivery": {
+        "name": "Out for delivery",
+        "unit_of_measurement": "parcels"
+      },
+      "parcel": {
+        "name": "Parcel",
+        "state": {
+          "available_for_pickup": "Ready for pickup",
+          "delivered": "Delivered",
+          "exception": "Problem",
+          "expired": "Expired",
+          "in_transit": "In transit",
+          "info_received": "Info received",
+          "out_for_delivery": "Out for delivery",
+          "pending": "Pending",
+          "returned": "Returned"
+        },
+        "state_attributes": {
+          "added_at": {
+            "name": "Added"
+          },
+          "carrier": {
+            "name": "Carrier"
+          },
+          "carrier_code": {
+            "name": "Carrier code"
+          },
+          "delivered_at": {
+            "name": "Delivered at"
+          },
+          "display_name": {
+            "name": "Display name"
+          },
+          "eta_end": {
+            "name": "Expected by"
+          },
+          "eta_start": {
+            "name": "Expected from"
+          },
+          "last_event": {
+            "name": "Last event"
+          },
+          "last_event_location": {
+            "name": "Last event location"
+          },
+          "last_event_time": {
+            "name": "Last event time"
+          },
+          "name": {
+            "name": "Name"
+          },
+          "outgoing": {
+            "name": "Outgoing"
+          },
+          "shared": {
+            "name": "Shared"
+          },
+          "status_text": {
+            "name": "Status text"
+          },
+          "tracking_number": {
+            "name": "Tracking number"
+          },
+          "tracking_url": {
+            "name": "Tracking page"
+          }
+        }
+      },
+      "problems": {
+        "name": "Problems",
+        "unit_of_measurement": "parcels"
+      },
+      "to_pick_up": {
+        "name": "To pick up",
+        "unit_of_measurement": "parcels"
+      },
+      "tracking_number": {
+        "name": "Tracking number",
+        "state_attributes": {
+          "tracking_url": {
+            "name": "Tracking page"
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "BoxBlip rejected the code. Reconnect with a new code from the app."
+    },
+    "cannot_connect": {
+      "message": "Could not reach the BoxBlip server: {error}"
+    },
+    "entry_not_found": {
+      "message": "No BoxBlip entry with id {entry_id}."
+    },
+    "entry_not_loaded": {
+      "message": "BoxBlip entry {title} is not loaded."
+    },
+    "rate_limited": {
+      "message": "The BoxBlip server asked to slow down. Retrying later."
+    },
+    "server_disabled": {
+      "message": "Home Assistant access is switched off on the BoxBlip server right now."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "delivered_days": "Keep delivered parcels for (days)",
+          "push": "Instant updates"
+        },
+        "data_description": {
+          "delivered_days": "Delivered, returned and expired parcels stay for this many days, then their sensors are removed. 0 removes them right away.",
+          "push": "Let the BoxBlip server notify Home Assistant when a status changes. Needs a public https address for Home Assistant (or Home Assistant Cloud); without one, BoxBlip checks every 5 minutes."
+        },
+        "title": "BoxBlip options"
+      }
+    }
+  },
+  "services": {
+    "refresh": {
+      "description": "Fetches your parcels from BoxBlip now instead of waiting for the next check.",
+      "fields": {
+        "config_entry_id": {
+          "description": "Only refresh this BoxBlip account. Leave empty to refresh all.",
+          "name": "Account"
+        }
+      },
+      "name": "Refresh"
+    }
+  }
+}

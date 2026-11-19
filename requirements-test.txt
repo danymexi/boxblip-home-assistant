@@ -1,0 +1,6 @@
+# Test-only dependencies for the BoxBlip Home Assistant integration.
+# pytest-homeassistant-custom-component pins Home Assistant itself
+# (0.13.375 -> homeassistant 2026.10.4) and needs Python >= 3.14.
+pytest-homeassistant-custom-component==0.13.375
+ruff==0.17.3
+mypy==1.18.2

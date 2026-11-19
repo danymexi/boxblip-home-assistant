@@ -1,0 +1,242 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Questo codice BoxBlip è già configurato.",
+      "reauth_successful": "Il nuovo codice funziona: BoxBlip è di nuovo collegato.",
+      "reconfigure_successful": "BoxBlip è stato aggiornato."
+    },
+    "error": {
+      "cannot_connect": "Impossibile raggiungere il server BoxBlip. Controlla l'indirizzo e la connessione a internet.",
+      "invalid_auth": "Il codice non è stato accettato. Forse è stato revocato: creane uno nuovo nell'app.",
+      "invalid_token_format": "Non sembra un codice BoxBlip: deve iniziare con bbha_.",
+      "invalid_url": "Inserisci un indirizzo https (http semplice funziona solo per un server su questa macchina).",
+      "server_disabled": "Al momento l'accesso da Home Assistant è disattivato sul server. Riprova più tardi.",
+      "unknown": "Errore imprevisto."
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "token": "Codice"
+        },
+        "data_description": {
+          "token": "Nell'app BoxBlip apri Importazione, poi Home Assistant, e tocca Genera un nuovo codice."
+        },
+        "description": "BoxBlip non accetta più il codice salvato. Incolla un nuovo codice dall'app.",
+        "title": "Ricollega BoxBlip"
+      },
+      "reconfigure": {
+        "data": {
+          "token": "Codice",
+          "url": "Indirizzo del server"
+        },
+        "data_description": {
+          "token": "Il codice dell'app BoxBlip (Importazione, poi Home Assistant).",
+          "url": "Lascia il valore predefinito, a meno che tu non usi un tuo server BoxBlip."
+        },
+        "title": "Aggiorna BoxBlip"
+      },
+      "user": {
+        "data": {
+          "token": "Codice",
+          "url": "Indirizzo del server"
+        },
+        "data_description": {
+          "token": "Nell'app BoxBlip apri Importazione, poi Home Assistant, tocca Collega Home Assistant e copia il codice. Viene mostrato una sola volta.",
+          "url": "Lascia il valore predefinito, a meno che tu non usi un tuo server BoxBlip."
+        },
+        "description": "Vedi i tuoi pacchi di BoxBlip in Home Assistant. Il codice permette a Home Assistant solo di leggere i pacchi.",
+        "title": "Collega BoxBlip"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "delivery_today": {
+        "name": "Consegna oggi"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Consegne"
+      }
+    },
+    "sensor": {
+      "carrier": {
+        "name": "Corriere"
+      },
+      "delivered_today": {
+        "name": "Consegnati oggi",
+        "unit_of_measurement": "pacchi"
+      },
+      "expected_delivery": {
+        "name": "Consegna entro",
+        "state_attributes": {
+          "has_time": {
+            "name": "Fascia oraria"
+          },
+          "window_end": {
+            "name": "Fine finestra"
+          },
+          "window_start": {
+            "name": "Inizio finestra"
+          }
+        }
+      },
+      "last_event": {
+        "name": "Ultimo evento"
+      },
+      "last_read": {
+        "name": "Ultima lettura"
+      },
+      "last_update": {
+        "name": "Ultimo aggiornamento"
+      },
+      "location": {
+        "name": "Ultimo luogo"
+      },
+      "next_delivery": {
+        "name": "Prossima consegna",
+        "state_attributes": {
+          "parcels": {
+            "name": "Pacchi"
+          }
+        }
+      },
+      "on_the_way": {
+        "name": "In arrivo",
+        "unit_of_measurement": "pacchi"
+      },
+      "out_for_delivery": {
+        "name": "In consegna",
+        "unit_of_measurement": "pacchi"
+      },
+      "parcel": {
+        "name": "Pacco",
+        "state": {
+          "available_for_pickup": "Pronto per il ritiro",
+          "delivered": "Consegnato",
+          "exception": "Problema",
+          "expired": "Scaduto",
+          "in_transit": "In viaggio",
+          "info_received": "Dati ricevuti",
+          "out_for_delivery": "In consegna",
+          "pending": "In attesa",
+          "returned": "Restituito"
+        },
+        "state_attributes": {
+          "added_at": {
+            "name": "Aggiunto"
+          },
+          "carrier": {
+            "name": "Corriere"
+          },
+          "carrier_code": {
+            "name": "Codice corriere"
+          },
+          "delivered_at": {
+            "name": "Consegnato il"
+          },
+          "display_name": {
+            "name": "Nome visualizzato"
+          },
+          "eta_end": {
+            "name": "Previsto entro"
+          },
+          "eta_start": {
+            "name": "Previsto dal"
+          },
+          "last_event": {
+            "name": "Ultimo aggiornamento"
+          },
+          "last_event_location": {
+            "name": "Luogo ultimo aggiornamento"
+          },
+          "last_event_time": {
+            "name": "Ora ultimo aggiornamento"
+          },
+          "name": {
+            "name": "Nome"
+          },
+          "outgoing": {
+            "name": "In uscita"
+          },
+          "shared": {
+            "name": "Condiviso"
+          },
+          "status_text": {
+            "name": "Testo stato"
+          },
+          "tracking_number": {
+            "name": "Numero di tracciamento"
+          },
+          "tracking_url": {
+            "name": "Pagina di tracciamento"
+          }
+        }
+      },
+      "problems": {
+        "name": "Problemi",
+        "unit_of_measurement": "pacchi"
+      },
+      "to_pick_up": {
+        "name": "Da ritirare",
+        "unit_of_measurement": "pacchi"
+      },
+      "tracking_number": {
+        "name": "Numero di tracciamento",
+        "state_attributes": {
+          "tracking_url": {
+            "name": "Pagina di tracciamento"
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "BoxBlip ha rifiutato il codice. Ricollega l'integrazione con un nuovo codice dall'app."
+    },
+    "cannot_connect": {
+      "message": "Impossibile raggiungere il server BoxBlip: {error}"
+    },
+    "entry_not_found": {
+      "message": "Nessuna voce BoxBlip con id {entry_id}."
+    },
+    "entry_not_loaded": {
+      "message": "La voce BoxBlip {title} non è caricata."
+    },
+    "rate_limited": {
+      "message": "Il server BoxBlip ha chiesto di rallentare. Nuovo tentativo più tardi."
+    },
+    "server_disabled": {
+      "message": "Al momento l'accesso da Home Assistant è disattivato sul server BoxBlip."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "delivered_days": "Mostra i pacchi consegnati per (giorni)",
+          "push": "Aggiornamenti immediati"
+        },
+        "data_description": {
+          "delivered_days": "I pacchi consegnati, restituiti o scaduti restano per questo numero di giorni, poi i loro sensori vengono rimossi. Con 0 spariscono subito.",
+          "push": "Il server BoxBlip avvisa Home Assistant quando cambia uno stato. Serve un indirizzo https pubblico per Home Assistant (o Home Assistant Cloud); senza, BoxBlip controlla ogni 5 minuti."
+        },
+        "title": "Opzioni BoxBlip"
+      }
+    }
+  },
+  "services": {
+    "refresh": {
+      "description": "Scarica subito i pacchi da BoxBlip senza aspettare il prossimo controllo.",
+      "fields": {
+        "config_entry_id": {
+          "description": "Aggiorna solo questo account BoxBlip. Lascia vuoto per aggiornarli tutti.",
+          "name": "Account"
+        }
+      },
+      "name": "Aggiorna"
+    }
+  }
+}

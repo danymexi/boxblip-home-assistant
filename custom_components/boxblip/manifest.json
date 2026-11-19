@@ -1,0 +1,14 @@
+{
+  "domain": "boxblip",
+  "name": "BoxBlip",
+  "after_dependencies": ["cloud"],
+  "codeowners": ["@danymexi"],
+  "config_flow": true,
+  "dependencies": ["webhook"],
+  "documentation": "https://github.com/danymexi/boxblip-home-assistant",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/danymexi/boxblip-home-assistant/issues",
+  "requirements": [],
+  "version": "0.2.0"
+}

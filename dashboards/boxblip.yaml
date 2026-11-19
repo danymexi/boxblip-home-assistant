@@ -1,0 +1,332 @@
+# BoxBlip: a ready-made dashboard (sections view, built-in cards only).
+#
+# It finds every BoxBlip parcel by itself and groups the parcels by status. Groups
+# with no parcels are hidden. Tap a parcel's name to open its device page, which has
+# all its details and a link to the carrier's tracking page.
+#
+# Add it: Settings > Dashboards > Add dashboard > New dashboard from scratch > open
+# it > pencil > three dots > Raw configuration editor > paste this file > Save.
+# The labels are in Italian. Change the quoted text to translate them.
+# Only entity ids that are the same in every language are used here.
+views:
+  - title: Pacchi
+    path: pacchi
+    icon: mdi:package-variant-closed
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Riepilogo
+            icon: mdi:package-variant-closed
+          - type: markdown
+            text_only: true
+            content: |-
+              {%- set active = ['pending', 'info_received', 'in_transit',
+              'out_for_delivery', 'available_for_pickup', 'exception'] -%}
+              {%- set ns = namespace(on_way=0, today=0, pickup=0, problems=0, delivered=0) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') -%}
+              {%- set s = states(e) -%}
+              {%- set d = state_attr(e, 'delivered_at') -%}
+              {%- set ns.on_way = ns.on_way + (1 if s in active else 0) -%}
+              {%- set ns.today = ns.today + (1 if s == 'out_for_delivery' else 0) -%}
+              {%- set ns.pickup = ns.pickup + (1 if s == 'available_for_pickup' else 0) -%}
+              {%- set ns.problems = ns.problems + (1 if s in ['exception', 'returned', 'expired'] else 0) -%}
+              {%- set ns.delivered = ns.delivered + (1 if s == 'delivered' and d
+                  and as_local(as_datetime(d | string)).date() == now().date() else 0) -%}
+              {%- endfor -%}
+              ## {{ ns.on_way }} {{ 'pacco in arrivo' if ns.on_way == 1 else 'pacchi in arrivo' }}
+
+              In consegna **{{ ns.today }}** · Da ritirare **{{ ns.pickup }}** · Problemi **{{ ns.problems }}** · Consegnati oggi **{{ ns.delivered }}**
+              {%- set next = states('sensor.boxblip_next_delivery') %}
+              {%- if next not in ['unknown', 'unavailable'] %}
+              {%- set day = as_datetime(next).date() %}
+              {%- set diff = (day - now().date()).days %}
+              {%- set names = state_attr('sensor.boxblip_next_delivery', 'parcels') or [] %}
+
+              Prossima consegna: **{{ names | join(', ') }}**, {{ 'oggi' if diff == 0 else 'domani' if diff == 1
+              else 'entro ' ~ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][day.weekday()] ~ ' ' ~ day.day ~ '/' ~ day.month }}
+              {%- endif %}
+      - type: grid
+        cards:
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set group = 'today' -%}
+              {%- macro when(t) -%}
+              {%- set t = as_local(as_datetime(t | string)) -%}
+              {%- set diff = (t.date() - now().date()).days -%}
+              {%- if diff == 0 -%}oggi {{ t.strftime('%H:%M') }}
+              {%- elif diff == -1 -%}ieri {{ t.strftime('%H:%M') }}
+              {%- elif diff == 1 -%}domani
+              {%- else -%}{{ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][t.weekday()] }} {{ t.day }}/{{ t.month }}
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- macro group_of(e) -%}
+              {%- set s = states(e) -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- if s == 'out_for_delivery' or (s in ['pending', 'info_received', 'in_transit']
+                  and end and as_local(as_datetime(end | string)).date() == now().date()) -%}today
+              {%- elif s in ['pending', 'info_received', 'in_transit'] -%}transit
+              {%- elif s == 'available_for_pickup' -%}pickup
+              {%- elif s == 'delivered' -%}delivered
+              {%- else -%}problems
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- set ns = namespace(rows=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and group_of(e) == group -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:truck-delivery-outline"></ha-icon> In consegna oggi ({{ ns.rows | count }})
+              {% for e in ns.rows | sort %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') -%}
+              {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set event = state_attr(e, 'last_event') -%}
+              {%- set place = state_attr(e, 'last_event_location') -%}
+              {%- set time = state_attr(e, 'last_event_time') -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- set url = state_attr(e, 'tracking_url') %}
+              **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
+              {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
+              {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
+              {%- if url %} · [traccia]({{ url }}){% endif %}<br>
+              <small>
+              {%- if group in ['transit', 'problems'] %}{{ state_attr(e, 'status_text') or states(e) }} · {% endif %}
+              {%- if event %}{{ event }}{% endif %}
+              {%- if place %} · {{ place }}{% endif %}
+              {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set group = 'transit' -%}
+              {%- macro when(t) -%}
+              {%- set t = as_local(as_datetime(t | string)) -%}
+              {%- set diff = (t.date() - now().date()).days -%}
+              {%- if diff == 0 -%}oggi {{ t.strftime('%H:%M') }}
+              {%- elif diff == -1 -%}ieri {{ t.strftime('%H:%M') }}
+              {%- elif diff == 1 -%}domani
+              {%- else -%}{{ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][t.weekday()] }} {{ t.day }}/{{ t.month }}
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- macro group_of(e) -%}
+              {%- set s = states(e) -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- if s == 'out_for_delivery' or (s in ['pending', 'info_received', 'in_transit']
+                  and end and as_local(as_datetime(end | string)).date() == now().date()) -%}today
+              {%- elif s in ['pending', 'info_received', 'in_transit'] -%}transit
+              {%- elif s == 'available_for_pickup' -%}pickup
+              {%- elif s == 'delivered' -%}delivered
+              {%- else -%}problems
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- set ns = namespace(rows=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and group_of(e) == group -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:truck-fast-outline"></ha-icon> In viaggio ({{ ns.rows | count }})
+              {% for e in ns.rows | sort %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') -%}
+              {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set event = state_attr(e, 'last_event') -%}
+              {%- set place = state_attr(e, 'last_event_location') -%}
+              {%- set time = state_attr(e, 'last_event_time') -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- set url = state_attr(e, 'tracking_url') %}
+              **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
+              {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
+              {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
+              {%- if url %} · [traccia]({{ url }}){% endif %}<br>
+              <small>
+              {%- if group in ['transit', 'problems'] %}{{ state_attr(e, 'status_text') or states(e) }} · {% endif %}
+              {%- if event %}{{ event }}{% endif %}
+              {%- if place %} · {{ place }}{% endif %}
+              {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set group = 'pickup' -%}
+              {%- macro when(t) -%}
+              {%- set t = as_local(as_datetime(t | string)) -%}
+              {%- set diff = (t.date() - now().date()).days -%}
+              {%- if diff == 0 -%}oggi {{ t.strftime('%H:%M') }}
+              {%- elif diff == -1 -%}ieri {{ t.strftime('%H:%M') }}
+              {%- elif diff == 1 -%}domani
+              {%- else -%}{{ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][t.weekday()] }} {{ t.day }}/{{ t.month }}
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- macro group_of(e) -%}
+              {%- set s = states(e) -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- if s == 'out_for_delivery' or (s in ['pending', 'info_received', 'in_transit']
+                  and end and as_local(as_datetime(end | string)).date() == now().date()) -%}today
+              {%- elif s in ['pending', 'info_received', 'in_transit'] -%}transit
+              {%- elif s == 'available_for_pickup' -%}pickup
+              {%- elif s == 'delivered' -%}delivered
+              {%- else -%}problems
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- set ns = namespace(rows=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and group_of(e) == group -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:store-marker-outline"></ha-icon> Da ritirare ({{ ns.rows | count }})
+              {% for e in ns.rows | sort %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') -%}
+              {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set event = state_attr(e, 'last_event') -%}
+              {%- set place = state_attr(e, 'last_event_location') -%}
+              {%- set time = state_attr(e, 'last_event_time') -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- set url = state_attr(e, 'tracking_url') %}
+              **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
+              {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
+              {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
+              {%- if url %} · [traccia]({{ url }}){% endif %}<br>
+              <small>
+              {%- if group in ['transit', 'problems'] %}{{ state_attr(e, 'status_text') or states(e) }} · {% endif %}
+              {%- if event %}{{ event }}{% endif %}
+              {%- if place %} · {{ place }}{% endif %}
+              {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set group = 'problems' -%}
+              {%- macro when(t) -%}
+              {%- set t = as_local(as_datetime(t | string)) -%}
+              {%- set diff = (t.date() - now().date()).days -%}
+              {%- if diff == 0 -%}oggi {{ t.strftime('%H:%M') }}
+              {%- elif diff == -1 -%}ieri {{ t.strftime('%H:%M') }}
+              {%- elif diff == 1 -%}domani
+              {%- else -%}{{ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][t.weekday()] }} {{ t.day }}/{{ t.month }}
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- macro group_of(e) -%}
+              {%- set s = states(e) -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- if s == 'out_for_delivery' or (s in ['pending', 'info_received', 'in_transit']
+                  and end and as_local(as_datetime(end | string)).date() == now().date()) -%}today
+              {%- elif s in ['pending', 'info_received', 'in_transit'] -%}transit
+              {%- elif s == 'available_for_pickup' -%}pickup
+              {%- elif s == 'delivered' -%}delivered
+              {%- else -%}problems
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- set ns = namespace(rows=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and group_of(e) == group -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:alert-circle-outline"></ha-icon> Problemi ({{ ns.rows | count }})
+              {% for e in ns.rows | sort %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') -%}
+              {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set event = state_attr(e, 'last_event') -%}
+              {%- set place = state_attr(e, 'last_event_location') -%}
+              {%- set time = state_attr(e, 'last_event_time') -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- set url = state_attr(e, 'tracking_url') %}
+              **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
+              {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
+              {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
+              {%- if url %} · [traccia]({{ url }}){% endif %}<br>
+              <small>
+              {%- if group in ['transit', 'problems'] %}{{ state_attr(e, 'status_text') or states(e) }} · {% endif %}
+              {%- if event %}{{ event }}{% endif %}
+              {%- if place %} · {{ place }}{% endif %}
+              {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set group = 'delivered' -%}
+              {%- macro when(t) -%}
+              {%- set t = as_local(as_datetime(t | string)) -%}
+              {%- set diff = (t.date() - now().date()).days -%}
+              {%- if diff == 0 -%}oggi {{ t.strftime('%H:%M') }}
+              {%- elif diff == -1 -%}ieri {{ t.strftime('%H:%M') }}
+              {%- elif diff == 1 -%}domani
+              {%- else -%}{{ ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'][t.weekday()] }} {{ t.day }}/{{ t.month }}
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- macro group_of(e) -%}
+              {%- set s = states(e) -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- if s == 'out_for_delivery' or (s in ['pending', 'info_received', 'in_transit']
+                  and end and as_local(as_datetime(end | string)).date() == now().date()) -%}today
+              {%- elif s in ['pending', 'info_received', 'in_transit'] -%}transit
+              {%- elif s == 'available_for_pickup' -%}pickup
+              {%- elif s == 'delivered' -%}delivered
+              {%- else -%}problems
+              {%- endif -%}
+              {%- endmacro -%}
+              {%- set ns = namespace(rows=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and group_of(e) == group -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:package-variant-closed-check"></ha-icon> Consegnati di recente ({{ ns.rows | count }})
+              {% for e in ns.rows | sort %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') -%}
+              {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set event = state_attr(e, 'last_event') -%}
+              {%- set place = state_attr(e, 'last_event_location') -%}
+              {%- set time = state_attr(e, 'last_event_time') -%}
+              {%- set end = state_attr(e, 'eta_end') -%}
+              {%- set url = state_attr(e, 'tracking_url') %}
+              **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
+              {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
+              {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
+              {%- if url %} · [traccia]({{ url }}){% endif %}<br>
+              <small>
+              {%- if group in ['transit', 'problems'] %}{{ state_attr(e, 'status_text') or states(e) }} · {% endif %}
+              {%- if event %}{{ event }}{% endif %}
+              {%- if place %} · {{ place }}{% endif %}
+              {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Calendario consegne
+            icon: mdi:calendar-month-outline
+          - type: calendar
+            initial_view: listWeek
+            entities:
+              - calendar.boxblip_deliveries

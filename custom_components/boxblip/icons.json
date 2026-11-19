@@ -1,0 +1,77 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "delivery_today": {
+        "default": "mdi:truck-check-outline",
+        "state": {
+          "on": "mdi:truck-delivery"
+        }
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "default": "mdi:calendar-month-outline"
+      }
+    },
+    "sensor": {
+      "carrier": {
+        "default": "mdi:truck-outline"
+      },
+      "delivered_today": {
+        "default": "mdi:package-variant-closed-check"
+      },
+      "expected_delivery": {
+        "default": "mdi:calendar-clock"
+      },
+      "last_event": {
+        "default": "mdi:message-text-outline"
+      },
+      "last_read": {
+        "default": "mdi:cloud-check-outline"
+      },
+      "last_update": {
+        "default": "mdi:clock-outline"
+      },
+      "location": {
+        "default": "mdi:map-marker-outline"
+      },
+      "next_delivery": {
+        "default": "mdi:calendar-arrow-right"
+      },
+      "on_the_way": {
+        "default": "mdi:truck-fast-outline"
+      },
+      "out_for_delivery": {
+        "default": "mdi:truck-delivery-outline"
+      },
+      "parcel": {
+        "default": "mdi:package-variant-closed",
+        "state": {
+          "available_for_pickup": "mdi:store-marker-outline",
+          "delivered": "mdi:package-variant-closed-check",
+          "exception": "mdi:package-variant-closed-remove",
+          "expired": "mdi:timer-sand-complete",
+          "in_transit": "mdi:truck-fast-outline",
+          "info_received": "mdi:clipboard-text-outline",
+          "out_for_delivery": "mdi:truck-delivery-outline",
+          "pending": "mdi:package-variant-closed",
+          "returned": "mdi:keyboard-return"
+        }
+      },
+      "problems": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "to_pick_up": {
+        "default": "mdi:store-marker-outline"
+      },
+      "tracking_number": {
+        "default": "mdi:barcode"
+      }
+    }
+  },
+  "services": {
+    "refresh": {
+      "service": "mdi:refresh"
+    }
+  }
+}
