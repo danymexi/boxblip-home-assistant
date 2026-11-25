@@ -22,6 +22,7 @@ GROUP_TITLES = (
     "Da ritirare",
     "Problemi",
     "Consegnati di recente",
+    "Per account",
 )
 
 
@@ -94,7 +95,7 @@ async def test_groups(
     )
     await setup_entry(hass, mock_config_entry)
 
-    summary, today, transit, pickup, problems, delivered = await _render(hass)
+    summary, today, transit, pickup, problems, delivered, accounts = await _render(hass)
     assert "## 5 pacchi in arrivo" in summary
     assert "In consegna **1**" in summary
     assert "Da ritirare **1**" in summary
@@ -119,6 +120,59 @@ async def test_groups(
     assert "[traccia](https://carrier.example/track/a1)" in today
     assert "<small>Arrived at depot · Milano · oggi 09:00</small>" in today
     assert "<small>In Transit · Arrived at depot" in transit
+    # No parcel has a store account: no account anywhere, the "Per account" card stays hidden.
+    assert "Per account" not in summary
+    assert accounts == ""
+
+
+@pytest.mark.freeze_time("2026-11-18T10:00:00+00:00")
+async def test_accounts(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Two accounts at the same store: rows name the account, a card splits them."""
+    await hass.config.async_update(time_zone="Europe/Rome")
+    mock_parcels(
+        aioclient_mock,
+        make_body(
+            [
+                make_parcel("c1", account="Amazon · Casa"),
+                make_parcel("c2", "out_for_delivery", account="Amazon · Casa"),
+                make_parcel("u1", account="Amazon · Ufficio"),
+                make_parcel(
+                    "u2",
+                    "delivered",
+                    delivered_at="2026-11-18T08:00:00Z",
+                    account="Amazon · Ufficio",
+                ),
+                make_parcel("h1"),
+            ]
+        ),
+    )
+    await setup_entry(hass, mock_config_entry)
+
+    summary, today, transit, _, _, delivered, accounts = await _render(hass)
+    assert "Per account: Amazon · Casa **2**, Amazon · Ufficio **1**" in summary
+    assert "BRT · Amazon · Casa" in today
+    assert "BRT · Amazon · Ufficio" in transit
+    assert "BRT · Amazon · Ufficio" in delivered
+    assert "Name h1" in transit
+    assert (
+        '### <ha-icon icon="mdi:account-multiple-outline"></ha-icon> Per account'
+        in accounts
+    )
+    assert "**Amazon · Casa** (2)" in accounts
+    assert "**Amazon · Ufficio** (1)" in accounts
+    casa, ufficio = accounts.split("**Amazon · Ufficio**")
+    assert "Name c1" in casa
+    assert "Name c2" in casa
+    assert "Name u1" not in casa
+    assert "Name u1" in ufficio
+    assert "In Transit" in ufficio
+    # Delivered parcels and parcels without an account are not in the split.
+    assert "Name u2" not in accounts
+    assert "Name h1" not in accounts
 
 
 async def test_no_parcels(

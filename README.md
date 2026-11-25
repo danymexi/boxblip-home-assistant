@@ -79,7 +79,7 @@ the device list, each device page and Home Assistant's automatic dashboard group
 
 | Entity | Example id | Description |
 |---|---|---|
-| On the way | `sensor.boxblip_on_the_way` | Number of parcels on the way. |
+| On the way | `sensor.boxblip_on_the_way` | Number of parcels on the way; attribute `by_account` counts them per store account (see "Several accounts at one store"). |
 | Out for delivery | `sensor.boxblip_out_for_delivery` | Number of parcels out for delivery. |
 | To pick up | `sensor.boxblip_to_pick_up` | Parcels waiting at a pickup point or locker. |
 | Delivered today | `sensor.boxblip_delivered_today` | Parcels delivered today. |
@@ -108,7 +108,25 @@ tracking page (*Visit*):
 A detail entity is created only once BoxBlip has that detail for the parcel (a parcel with no estimate yet has no
 "Expected by" until one arrives). The status sensor keeps all details as attributes too: `name`, `display_name`,
 `status_text` (localised), `carrier`, `carrier_code`, `tracking_number`, `last_event`, `last_event_time`,
-`last_event_location`, `eta_start`, `eta_end`, `tracking_url`, `outgoing`, `shared`, `added_at`, `delivered_at`.
+`last_event_location`, `eta_start`, `eta_end`, `tracking_url`, `outgoing`, `shared`, `account`, `added_at`,
+`delivered_at`.
+
+### Several accounts at one store
+
+When the app has more than one account at the same store (two Amazon accounts in one household, say), every parcel
+one of them imported carries the account as the app names it, for example `Amazon · Casa` or `Amazon · Ufficio`
+(the store and the name you gave the account in the app; rename it there and Home Assistant follows at the next
+update). It is in:
+
+- the `account` attribute of the parcel's status sensor (`sensor.boxblip_shoes`) and of the
+  `boxblip_parcel_updated` event;
+- the `by_account` attribute of the On the way counter, for example `{"Amazon · Casa": 2, "Amazon · Ufficio": 1}`;
+- the ready-made dashboard: each row names its account and a *Per account* card lists the parcels on the way under
+  each account.
+
+`account` is `null` for parcels you added by hand or from an e-mail, for shared parcels and for stores with a single
+account in the app. The app sends the account names only while Home Assistant is connected; it needs an up-to-date
+BoxBlip app and server (with older ones the attribute just stays empty).
 
 Lifecycle:
 
@@ -128,8 +146,9 @@ working. Only the shown name changes, from "BoxBlip Shoes" to "Shoes".
 [`dashboards/boxblip.yaml`](dashboards/boxblip.yaml) is a ready-made dashboard (sections view, built-in cards only).
 It finds your parcels by itself and groups them: *In consegna oggi*, *In viaggio*, *Da ritirare*, *Problemi*,
 *Consegnati di recente*, with a summary on top and the delivery calendar. Empty groups are hidden. Each parcel shows
-its name, carrier, last event, place and time; tap the name to open the parcel's device page. The labels are in
-Italian; change the quoted text to translate them.
+its name, carrier, store account (when there is one), last event, place and time; tap the name to open the parcel's
+device page. With several accounts at one store the summary counts the parcels on the way per account and a *Per
+account* card lists them under each account. The labels are in Italian; change the quoted text to translate them.
 
 To add it: **Settings › Dashboards › Add dashboard › New dashboard from scratch**, open the new dashboard, then
 **pencil › three dots › Raw configuration editor**, paste the file's content and **Save**.
@@ -151,6 +170,7 @@ Fired on the Home Assistant bus when a parcel's status changes, with this data:
 | `eta` | `{"start": "…Z", "end": "…Z", "has_time": false}` or `null` |
 | `tracking_url` | carrier page or `null` |
 | `outgoing` | `false` |
+| `account` | `Amazon · Casa` or `null` (see "Several accounts at one store") |
 
 Rules:
 
@@ -296,6 +316,27 @@ content: >
   {% endfor %}
 ```
 
+### Parcels of one store account
+
+Replace `Amazon · Casa` with the account name you see in the `account` attribute.
+
+```yaml
+type: markdown
+title: Amazon · Casa
+content: >
+  {% for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+     if state_attr(e, 'account') == 'Amazon · Casa' %}
+  **{{ state_attr(e, 'display_name') }}**: {{ state_attr(e, 'status_text') or states(e) }}
+  {% else %}
+  Nothing on the way for this account.
+  {% endfor %}
+```
+
+The same test works in automations, for example in a condition on the `boxblip_parcel_updated` event:
+`{{ trigger.event.data.account == 'Amazon · Ufficio' }}`. How many parcels of one account are on the way:
+`{{ (state_attr('sensor.boxblip_on_the_way', 'by_account') or {}).get('Amazon · Casa', 0) }}` (use your counter's
+entity id: `sensor.boxblip_in_arrivo` in Italian).
+
 ### Entities card
 
 ```yaml
@@ -323,11 +364,13 @@ code; if you only do step 1, the code keeps working until you disconnect it in t
   other integration credential. Anyone with the code can read your parcel list, so treat it as a password and
   generate a new one if in doubt.
 - What Home Assistant receives: for each parcel in transit or delivered in the last days, its name, tracking number,
-  carrier, status, last tracking event (text, time, place), expected delivery window and carrier tracking link.
-  Never addresses, pickup or delivery codes, or data from connected stores.
+  carrier, status, last tracking event (text, time, place), expected delivery window and carrier tracking link and,
+  with several accounts at one store, the name of the account the parcel came from. Never addresses, pickup or
+  delivery codes, or other data from connected stores.
 - Home Assistant reads the list every 5 minutes (and on push, when enabled). The server only answers "nothing
   changed" when that is the case.
-- Diagnostics downloads hide the code, webhook id, parcel names, tracking numbers, event texts and places, and links.
+- Diagnostics downloads hide the code, webhook id, parcel names, tracking numbers, event texts and places, links and
+  account names.
 
 ## Troubleshooting
 
@@ -412,6 +455,14 @@ lista dei dispositivi, la pagina di ogni dispositivo e la dashboard automatica d
   attributi), **Consegna entro**, **Ultimo aggiornamento**, **Ultimo evento**, **Ultimo luogo** e, tra la
   diagnostica, **Corriere** e **Numero di tracciamento**. Un'entità di dettaglio nasce solo quando BoxBlip ha quel
   dato per il pacco.
+- **Più account dello stesso negozio**: se nell'app hai più account dello stesso negozio (per esempio due account
+  Amazon in casa), ogni pacco importato da uno di loro ha l'attributo `account` con il nome che l'app gli dà, per
+  esempio `Amazon · Casa` o `Amazon · Ufficio` (anche nell'evento `boxblip_parcel_updated`), e il contatore **In
+  arrivo** ha l'attributo `by_account` con i pacchi in viaggio per account. `account` è vuoto per i pacchi aggiunti a
+  mano o da email, per quelli condivisi e per i negozi con un solo account. Serve l'app BoxBlip aggiornata.
+  Una scheda con i pacchi di un solo account:
+  `{% for e in integration_entities('boxblip') | select('match', 'sensor\\.') if state_attr(e, 'account') == 'Amazon · Casa' %}`
+  (vedi l'esempio completo in inglese, "Parcels of one store account").
 - I pacchi nuovi compaiono da soli; rinominarli nell'app rinomina il dispositivo; quelli consegnati restano per i
   giorni scelti e poi dispositivo ed entità vengono rimossi.
 - Aggiornando dalla 0.1 (tutto su un solo dispositivo) i sensori dei pacchi tengono il loro `entity_id` e passano
@@ -423,7 +474,9 @@ lista dei dispositivi, la pagina di ogni dispositivo e la dashboard automatica d
 [`dashboards/boxblip.yaml`](dashboards/boxblip.yaml) è una dashboard pronta (vista a sezioni, solo schede standard).
 Trova i pacchi da sola e li raggruppa in *In consegna oggi*, *In viaggio*, *Da ritirare*, *Problemi* e *Consegnati di
 recente*, con un riepilogo in alto e il calendario delle consegne; i gruppi vuoti non si vedono. Per ogni pacco:
-nome, corriere, ultimo evento, luogo e ora; toccando il nome si apre la pagina del dispositivo del pacco.
+nome, corriere, account del negozio (se c'è), ultimo evento, luogo e ora; toccando il nome si apre la pagina del
+dispositivo del pacco. Con più account dello stesso negozio il riepilogo conta i pacchi in viaggio per account e la
+scheda *Per account* li elenca sotto ciascun account.
 
 Per aggiungerla: **Impostazioni › Plance › Aggiungi plancia › Nuova plancia da zero**, apri la plancia nuova, poi
 **matita › tre puntini › Editor di configurazione testuale**, incolla il contenuto del file e **Salva**.
@@ -465,6 +518,7 @@ Anche **Cancella i miei dati** nell'app scollega Home Assistant.
 
 Il codice permette solo di leggere i pacchi. Home Assistant riceve nome, numero di tracciamento, corriere, stato,
 ultimo evento (testo, ora, luogo), finestra di consegna prevista e link del corriere dei pacchi in viaggio o
-consegnati negli ultimi giorni; mai indirizzi, codici di ritiro o di consegna, né dati dei negozi collegati. La
-lettura avviene ogni 5 minuti. I file di diagnostica nascondono codice, nomi, numeri di tracciamento, testi e luoghi
-degli eventi e link.
+consegnati negli ultimi giorni e, con più account dello stesso negozio, il nome dell'account da cui viene il pacco;
+mai indirizzi, codici di ritiro o di consegna, né altri dati dei negozi collegati. La lettura avviene ogni 5 minuti.
+I file di diagnostica nascondono codice, nomi, numeri di tracciamento, testi e luoghi degli eventi, link e nomi degli
+account.

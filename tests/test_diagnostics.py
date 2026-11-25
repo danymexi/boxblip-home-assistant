@@ -30,7 +30,12 @@ async def test_diagnostics_redacted(
     mock_parcels(
         aioclient_mock,
         make_body(
-            [make_parcel("p1", name="Scarpe", display_name="Scarpe")], problems=1
+            [
+                make_parcel(
+                    "p1", name="Scarpe", display_name="Scarpe", account="Amazon · Casa"
+                )
+            ],
+            problems=1,
         ),
     )
     await setup_entry(hass, mock_config_entry)
@@ -45,6 +50,7 @@ async def test_diagnostics_redacted(
         "Arrived at depot",
         "Milano",
         "carrier.example",
+        "Amazon · Casa",
     ):
         assert secret not in dumped, secret
 

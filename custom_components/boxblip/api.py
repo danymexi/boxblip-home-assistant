@@ -119,6 +119,10 @@ class Parcel:
     outgoing: bool = False
     archived: bool = False
     shared: bool = False
+    # The store account the parcel came from, as the app names it ("Amazon · Casa").
+    # None for parcels added by hand, from an e-mail or shared, for stores with one
+    # account in the app, and from servers that do not send it.
+    account: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Parcel | None:
@@ -158,6 +162,7 @@ class Parcel:
             outgoing=data.get("outgoing") is True,
             archived=data.get("archived") is True,
             shared=data.get("shared") is True,
+            account=_str(data.get("account")),
         )
 
 

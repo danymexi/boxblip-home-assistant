@@ -14,7 +14,7 @@ from .coordinator import BoxBlipConfigEntry
 
 TO_REDACT_ENTRY = {CONF_TOKEN, CONF_WEBHOOK_ID}
 # Personal or identifying fields of a parcel.
-PARCEL_REDACT = {"name", "display_name", "tracking_number", "tracking_url"}
+PARCEL_REDACT = {"name", "display_name", "tracking_number", "tracking_url", "account"}
 EVENT_REDACT = {"text", "location"}
 
 

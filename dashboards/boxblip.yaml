@@ -1,7 +1,9 @@
 # BoxBlip: a ready-made dashboard (sections view, built-in cards only).
 #
 # It finds every BoxBlip parcel by itself and groups the parcels by status. Groups
-# with no parcels are hidden. Tap a parcel's name to open its device page, which has
+# with no parcels are hidden. With several accounts at the same store in the app
+# (two Amazon accounts, say), each row names its account and a "Per account" card
+# splits the parcels on the way by account. Tap a parcel's name to open its device page, which has
 # all its details and a link to the carrier's tracking page.
 #
 # Add it: Settings > Dashboards > Add dashboard > New dashboard from scratch > open
@@ -25,12 +27,14 @@ views:
             content: |-
               {%- set active = ['pending', 'info_received', 'in_transit',
               'out_for_delivery', 'available_for_pickup', 'exception'] -%}
-              {%- set ns = namespace(on_way=0, today=0, pickup=0, problems=0, delivered=0) -%}
+              {%- set ns = namespace(on_way=0, today=0, pickup=0, problems=0, delivered=0, accounts=[]) -%}
               {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
                   if is_state_attr(e, 'device_class', 'enum') -%}
               {%- set s = states(e) -%}
               {%- set d = state_attr(e, 'delivered_at') -%}
               {%- set ns.on_way = ns.on_way + (1 if s in active else 0) -%}
+              {%- set account = state_attr(e, 'account') -%}
+              {%- set ns.accounts = ns.accounts + ([account] if account and s in active else []) -%}
               {%- set ns.today = ns.today + (1 if s == 'out_for_delivery' else 0) -%}
               {%- set ns.pickup = ns.pickup + (1 if s == 'available_for_pickup' else 0) -%}
               {%- set ns.problems = ns.problems + (1 if s in ['exception', 'returned', 'expired'] else 0) -%}
@@ -40,6 +44,12 @@ views:
               ## {{ ns.on_way }} {{ 'pacco in arrivo' if ns.on_way == 1 else 'pacchi in arrivo' }}
 
               In consegna **{{ ns.today }}** · Da ritirare **{{ ns.pickup }}** · Problemi **{{ ns.problems }}** · Consegnati oggi **{{ ns.delivered }}**
+              {%- if ns.accounts %}
+
+              Per account: {% for a in ns.accounts | unique | sort -%}
+              {{ a }} **{{ ns.accounts | select('eq', a) | list | count }}**{{ ', ' if not loop.last }}
+              {%- endfor %}
+              {%- endif %}
               {%- set next = states('sensor.boxblip_next_delivery') %}
               {%- if next not in ['unknown', 'unavailable'] %}
               {%- set day = as_datetime(next).date() %}
@@ -87,6 +97,7 @@ views:
               {%- set dev = device_id(e) -%}
               {%- set name = state_attr(e, 'friendly_name') -%}
               {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set account = state_attr(e, 'account') -%}
               {%- set event = state_attr(e, 'last_event') -%}
               {%- set place = state_attr(e, 'last_event_location') -%}
               {%- set time = state_attr(e, 'last_event_time') -%}
@@ -94,6 +105,7 @@ views:
               {%- set url = state_attr(e, 'tracking_url') %}
               **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
               {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if account %} · {{ account }}{% endif %}
               {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
               {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
               {%- if url %} · [traccia]({{ url }}){% endif %}<br>
@@ -141,6 +153,7 @@ views:
               {%- set dev = device_id(e) -%}
               {%- set name = state_attr(e, 'friendly_name') -%}
               {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set account = state_attr(e, 'account') -%}
               {%- set event = state_attr(e, 'last_event') -%}
               {%- set place = state_attr(e, 'last_event_location') -%}
               {%- set time = state_attr(e, 'last_event_time') -%}
@@ -148,6 +161,7 @@ views:
               {%- set url = state_attr(e, 'tracking_url') %}
               **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
               {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if account %} · {{ account }}{% endif %}
               {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
               {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
               {%- if url %} · [traccia]({{ url }}){% endif %}<br>
@@ -195,6 +209,7 @@ views:
               {%- set dev = device_id(e) -%}
               {%- set name = state_attr(e, 'friendly_name') -%}
               {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set account = state_attr(e, 'account') -%}
               {%- set event = state_attr(e, 'last_event') -%}
               {%- set place = state_attr(e, 'last_event_location') -%}
               {%- set time = state_attr(e, 'last_event_time') -%}
@@ -202,6 +217,7 @@ views:
               {%- set url = state_attr(e, 'tracking_url') %}
               **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
               {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if account %} · {{ account }}{% endif %}
               {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
               {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
               {%- if url %} · [traccia]({{ url }}){% endif %}<br>
@@ -249,6 +265,7 @@ views:
               {%- set dev = device_id(e) -%}
               {%- set name = state_attr(e, 'friendly_name') -%}
               {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set account = state_attr(e, 'account') -%}
               {%- set event = state_attr(e, 'last_event') -%}
               {%- set place = state_attr(e, 'last_event_location') -%}
               {%- set time = state_attr(e, 'last_event_time') -%}
@@ -256,6 +273,7 @@ views:
               {%- set url = state_attr(e, 'tracking_url') %}
               **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
               {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if account %} · {{ account }}{% endif %}
               {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
               {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
               {%- if url %} · [traccia]({{ url }}){% endif %}<br>
@@ -303,6 +321,7 @@ views:
               {%- set dev = device_id(e) -%}
               {%- set name = state_attr(e, 'friendly_name') -%}
               {%- set carrier = state_attr(e, 'carrier') -%}
+              {%- set account = state_attr(e, 'account') -%}
               {%- set event = state_attr(e, 'last_event') -%}
               {%- set place = state_attr(e, 'last_event_location') -%}
               {%- set time = state_attr(e, 'last_event_time') -%}
@@ -310,6 +329,7 @@ views:
               {%- set url = state_attr(e, 'tracking_url') %}
               **{% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %}**
               {%- if carrier %} · {{ carrier }}{% endif %}
+              {%- if account %} · {{ account }}{% endif %}
               {%- if is_state_attr(e, 'outgoing', true) %} · in uscita{% endif %}
               {%- if group == 'transit' and end %} · entro {{ when(end) }}{% endif %}
               {%- if url %} · [traccia]({{ url }}){% endif %}<br>
@@ -318,6 +338,33 @@ views:
               {%- if event %}{{ event }}{% endif %}
               {%- if place %} · {{ place }}{% endif %}
               {%- if time %} · {{ when(time) }}{% endif %}</small>
+
+              {% endfor -%}
+              {%- endif -%}
+      - type: grid
+        cards:
+          - type: markdown
+            text_only: true
+            show_empty: false
+            content: |-
+              {%- set active = ['pending', 'info_received', 'in_transit',
+              'out_for_delivery', 'available_for_pickup', 'exception'] -%}
+              {%- set ns = namespace(rows=[], accounts=[]) -%}
+              {%- for e in integration_entities('boxblip') | select('match', 'sensor\\.')
+                  if is_state_attr(e, 'device_class', 'enum') and states(e) in active
+                  and state_attr(e, 'account') -%}
+              {%- set ns.rows = ns.rows + [e] -%}
+              {%- set ns.accounts = ns.accounts + [state_attr(e, 'account')] -%}
+              {%- endfor -%}
+              {%- if ns.rows -%}
+              ### <ha-icon icon="mdi:account-multiple-outline"></ha-icon> Per account
+              {% for a in ns.accounts | unique | sort %}
+              **{{ a }}** ({{ ns.accounts | select('eq', a) | list | count }})
+              {% for e in ns.rows | sort if state_attr(e, 'account') == a %}
+              {%- set dev = device_id(e) -%}
+              {%- set name = state_attr(e, 'friendly_name') %}
+              - {% if dev %}[{{ name }}](/config/devices/device/{{ dev }}){% else %}{{ name }}{% endif %} · {{ state_attr(e, 'status_text') or states(e) }}
+              {%- endfor %}
 
               {% endfor -%}
               {%- endif -%}

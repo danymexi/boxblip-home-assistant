@@ -168,4 +168,5 @@ class BoxBlipCoordinator(DataUpdateCoordinator[BoxBlipData]):
             "eta": raw.get("eta"),
             "tracking_url": parcel.tracking_url,
             "outgoing": parcel.outgoing,
+            "account": parcel.account,
         }

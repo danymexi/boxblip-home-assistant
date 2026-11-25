@@ -55,6 +55,7 @@ async def test_parcel_sensor(
                         "has_time": False,
                     },
                     shared=True,
+                    account="Amazon · Casa",
                 )
             ]
         ),
@@ -76,6 +77,7 @@ async def test_parcel_sensor(
     )
     assert state.attributes["eta_end"].isoformat() == "2026-11-19T18:00:00+00:00"
     assert state.attributes["shared"] is True
+    assert state.attributes["account"] == "Amazon · Casa"
     assert state.attributes["outgoing"] is False
     assert state.attributes["delivered_at"] is None
 
@@ -200,6 +202,42 @@ async def test_summary_sensors(
         assert state.state == value, key
         assert state.attributes[ATTR_UNIT_OF_MEASUREMENT] == "parcels"
         assert state.attributes["state_class"] == "measurement"
+    assert hass.states.get("sensor.boxblip_on_the_way").attributes["by_account"] == {}
+
+
+async def test_parcels_by_account(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Parcels on the way per store account; parcels without one keep working."""
+    mock_parcels(
+        aioclient_mock,
+        make_body(
+            [
+                make_parcel("c1", account="Amazon · Casa"),
+                make_parcel("c2", "out_for_delivery", account="Amazon · Casa"),
+                make_parcel("u1", account="Amazon · Ufficio"),
+                make_parcel("u2", "delivered", account="Amazon · Ufficio"),
+                make_parcel("u3", account="Amazon · Ufficio", archived=True),
+                make_parcel("h1"),
+                make_parcel("h2", account=""),
+            ],
+            on_the_way=4,
+        ),
+    )
+    await setup_entry(hass, mock_config_entry)
+    state = hass.states.get("sensor.boxblip_on_the_way")
+    assert state.state == "4"
+    assert state.attributes["by_account"] == {
+        "Amazon · Casa": 2,
+        "Amazon · Ufficio": 1,
+    }
+    assert hass.states.get("sensor.boxblip_name_u2").attributes["account"] == (
+        "Amazon · Ufficio"
+    )
+    assert hass.states.get("sensor.boxblip_name_h1").attributes["account"] is None
+    assert hass.states.get("sensor.boxblip_name_h2").attributes["account"] is None
 
 
 @pytest.mark.parametrize(

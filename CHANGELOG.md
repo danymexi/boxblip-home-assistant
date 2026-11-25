@@ -1,8 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
-- README: voice announcements on Alexa, Google Nest and HomePod when a parcel is out for delivery.
+- Several accounts at one store: each parcel imported from one of them has an `account` attribute (for example
+  `Amazon · Casa`), also in the `boxblip_parcel_updated` event; the On the way counter has a `by_account` attribute
+  with the parcels on the way per account. Needs an up-to-date BoxBlip app; parcels without an account and
+  older servers keep working (the attribute is empty).
+- Dashboard: each row names its store account, the summary counts the parcels on the way per account and a new
+  *Per account* card lists them under each account (hidden when no parcel has an account).
+- Diagnostics also hide account names.
+- README: voice announcements on Alexa, Google Nest and HomePod when a parcel is out for delivery; a card and
+  templates for the parcels of one store account.
 
 ## 0.2.0
 

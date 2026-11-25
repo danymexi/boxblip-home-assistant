@@ -1,6 +1,7 @@
 """Sensors for BoxBlip.
 
-Account device: the counts, the next expected delivery and when BoxBlip was last read.
+Account device: the counts (on the way also per store account), the next expected
+delivery and when BoxBlip was last read.
 Each parcel's device: its status plus, once the server has them, its expected
 delivery, last update, last event, last place, carrier and tracking number.
 """
@@ -41,11 +42,21 @@ INCOMING_STATUSES = frozenset(
 )
 
 
+def parcels_by_account(data: BoxBlipData) -> dict[str, int]:
+    """Parcels on the way per store account, for parcels that have one."""
+    counts: dict[str, int] = {}
+    for parcel in data.visible_parcels.values():
+        if parcel.account is not None and parcel.active:
+            counts[parcel.account] = counts.get(parcel.account, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 @dataclass(frozen=True, kw_only=True)
 class BoxBlipSummarySensorDescription(SensorEntityDescription):
     """Describes one count from the summary."""
 
     value_fn: Callable[[Summary], int]
+    attrs_fn: Callable[[BoxBlipData], dict[str, Any]] | None = None
 
 
 SUMMARY_SENSORS: tuple[BoxBlipSummarySensorDescription, ...] = (
@@ -53,6 +64,7 @@ SUMMARY_SENSORS: tuple[BoxBlipSummarySensorDescription, ...] = (
         key="on_the_way",
         translation_key="on_the_way",
         value_fn=lambda s: s.on_the_way,
+        attrs_fn=lambda d: {"by_account": parcels_by_account(d)},
     ),
     BoxBlipSummarySensorDescription(
         key="out_for_delivery",
@@ -231,6 +243,13 @@ class BoxBlipSummarySensor(BoxBlipEntity, SensorEntity):
         """Return the count."""
         return self.entity_description.value_fn(self.coordinator.data.response.summary)
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Extra details, for the counts that have some."""
+        if self.entity_description.attrs_fn is None:
+            return None
+        return self.entity_description.attrs_fn(self.coordinator.data)
+
 
 class BoxBlipNextDeliverySensor(BoxBlipEntity, SensorEntity):
     """The day the next incoming parcel is expected by."""
@@ -324,6 +343,7 @@ class BoxBlipParcelStatusSensor(BoxBlipParcelEntity, SensorEntity):
             "tracking_url": parcel.tracking_url,
             "outgoing": parcel.outgoing,
             "shared": parcel.shared,
+            "account": parcel.account,
             "added_at": parcel.added_at,
             "delivered_at": parcel.delivered_at,
         }

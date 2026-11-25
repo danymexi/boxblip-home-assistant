@@ -269,6 +269,8 @@ async def test_events_on_status_change(
         },
         "tracking_url": "https://carrier.example/track/p1",
         "outgoing": False,
+        # A server that does not send the account (or a parcel without one).
+        "account": None,
     }
     assert by_id["p3"]["old_status"] is None
     assert by_id["p3"]["new_status"] == "info_received"
